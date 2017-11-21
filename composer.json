@@ -1,0 +1,14 @@
+{
+  "name": "drupal/private_entity",
+  "type": "drupal-module",
+  "description": "Simple per entity access control.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/private_entity",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/private_entity",
+    "source": "http://cgit.drupalcode.org/private_entity"
+  },
+  "require": { }
+}

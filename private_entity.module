@@ -1,0 +1,132 @@
+<?php
+
+/**
+ * @file
+ * Contains private_entity.module.
+ */
+
+use Drupal\entity_tools\EntityTools;
+use Drupal\entity_tools\FieldTools;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Session\AccountInterface;
+
+define('PRIVATE_ENTITY_REALM', 'private_entity_access');
+
+/**
+ * Implements hook_help().
+ */
+function private_entity_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the private_entity module.
+    case 'help.page.private_entity':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Simple per entity access control.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Returns an array of accounts that have access to the private entities.
+ *
+ * @param string $op
+ *   Operation: view, update, delete.
+ *
+ * @return array
+ *   Array of AccountInterface instances.
+ */
+function _private_entity_get_accounts($op = 'view') {
+  $result = [];
+  // Possible coverage of other operations
+  // currently limited to 'view'.
+  $entityTools = \Drupal::service('entity_tools');
+  if ($entityTools instanceof EntityTools) {
+    $result = $entityTools->getUsersByPermission('private entity view access');
+  }
+  return $result;
+}
+
+/**
+ * Implements hook_node_access_records().
+ */
+function private_entity_node_access_records(NodeInterface $node) {
+
+  // This hook is called after saving a node.
+  $isPrivate = FALSE;
+  $privateFieldName = FieldTools::getFieldNameFromType($node, 'private_entity');
+  if (!is_null($privateFieldName) && $node->hasField($privateFieldName)) {
+    // @todo define a field type 'is private' that can be appended on entities.
+    // @todo config to set message or not.
+    if (isset($node->get($privateFieldName)->getValue()[0]['value'])
+      && (int) $node->get($privateFieldName)->getValue()[0]['value'] === 1) {
+      $isPrivate = TRUE;
+      drupal_set_message(t('This content was set as private.'), 'warning');
+    }
+    else {
+      drupal_set_message(t('This content was set as public.'));
+    }
+  }
+
+  if ($isPrivate) {
+    // If a user can view, it becomes elligible to update or delete.
+    // Otherwise just ignore the grant for other accounts.
+    $accounts = _private_entity_get_accounts();
+    foreach ($accounts as $account) {
+      if ($account instanceof AccountInterface) {
+        // Evaluation to update or delete can be done here.
+        // Or simply during the evaluation of hook_node_grants()
+        // but with perf issue.
+        // @todo evaluate has permission to update
+        $grantUpdate = 0;
+        // @todo evaluate has permission to delete
+        $grantDelete = 0;
+        $grants[] = [
+          'realm' => PRIVATE_ENTITY_REALM,
+          'gid' => $account->id(),
+          'grant_view' => 1,
+          'grant_update' => $grantUpdate,
+          'grant_delete' => $grantDelete,
+          'langcode' => 'en',
+        ];
+      }
+    }
+
+    // Exception for the admin GID.
+    $grants[] = array(
+      'realm' => PRIVATE_ENTITY_REALM,
+      'gid' => 0,
+      'grant_view' => 1,
+      'grant_update' => 1,
+      'grant_delete' => 1,
+      'langcode' => 'en',
+    );
+
+    return $grants;
+  }
+}
+
+/**
+ * Implements hook_node_grants().
+ */
+function private_entity_node_grants(AccountInterface $account, $op) {
+
+  // This hook is called each time access to a node needs to be determined.
+  $grants = array();
+
+  if (in_array('administrator', $account->getRoles())) {
+    // Gid to view, update, delete.
+    $grants[PRIVATE_ENTITY_REALM][] = 0;
+    return $grants;
+  }
+
+  // @todo roles exclusion (bypass access rule) from a new permission
+  if ($account->id() != 0) {
+    // Otherwise return uid, might match entry in table.
+    $grants[PRIVATE_ENTITY_REALM][] = $account->id();
+  }
+
+  return $grants;
+}

@@ -1,0 +1,9 @@
+name: Private Entity
+type: module
+description: Simple per entity access control.
+core: 8.x
+package: Access control
+
+dependencies:
+  - node
+  - entity_tools
