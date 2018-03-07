@@ -10,6 +10,7 @@ use Drupal\entity_tools\FieldTools;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\field\Entity\FieldConfig;
 
 define('PRIVATE_ENTITY_REALM', 'private_entity_access');
 
@@ -50,6 +51,41 @@ function _private_entity_get_accounts($op = 'view') {
 }
 
 /**
+ * Initializes the value as public of existing entities.
+ *
+ * @param string $entity_type_id
+ *   Entity type id.
+ * @param string $entity_bundle
+ *   Entity bundle name.
+ * @param string $field_name
+ *   Field name.
+ *
+ * @return int
+ *   Amount of entries that were updated.
+ */
+function _private_entity_init_old_entries($entity_type_id, $entity_bundle, $field_name) {
+  $entityTypeManager = \Drupal::service('entity_type.manager');
+  $storage = $entityTypeManager->getStorage($entity_type_id);
+  $bundleKey = $storage->getEntityType()->getKey('bundle');
+  $entityQuery = \Drupal::entityQuery($entity_type_id);
+  $entityQuery->condition($bundleKey, $entity_bundle);
+  $entityIds = $entityQuery->execute();
+
+  $updated = 0;
+  foreach ($entityIds as $entityId) {
+    $entity = $storage->loadUnchanged($entityId);
+    // @todo review multilingual
+    // @todo set const for public
+    $entity->{$field_name}->value = 0;
+    if ($entity->save() === SAVED_UPDATED) {
+      ++$updated;
+    }
+  }
+
+  return $updated;
+}
+
+/**
  * Implements hook_node_access_records().
  */
 function private_entity_node_access_records(NodeInterface $node) {
@@ -58,10 +94,11 @@ function private_entity_node_access_records(NodeInterface $node) {
   $isPrivate = FALSE;
   $privateFieldName = FieldTools::getFieldNameFromType($node, 'private_entity');
   if (!is_null($privateFieldName) && $node->hasField($privateFieldName)) {
+    $privateFieldValue = $node->get($privateFieldName)->getValue();
     // @todo define a field type 'is private' that can be appended on entities.
     // @todo config to set message or not.
-    if (isset($node->get($privateFieldName)->getValue()[0]['value'])
-      && (int) $node->get($privateFieldName)->getValue()[0]['value'] === 1) {
+    if (isset($privateFieldValue[0]['value'])
+      && (int) $privateFieldValue[0]['value'] === 1) {
       $isPrivate = TRUE;
       drupal_set_message(t('This content was set as private.'), 'warning');
     }
@@ -95,14 +132,14 @@ function private_entity_node_access_records(NodeInterface $node) {
     }
 
     // Exception for the admin GID.
-    $grants[] = array(
+    $grants[] = [
       'realm' => PRIVATE_ENTITY_REALM,
       'gid' => 0,
       'grant_view' => 1,
       'grant_update' => 1,
       'grant_delete' => 1,
       'langcode' => 'en',
-    );
+    ];
 
     return $grants;
   }
@@ -114,7 +151,7 @@ function private_entity_node_access_records(NodeInterface $node) {
 function private_entity_node_grants(AccountInterface $account, $op) {
 
   // This hook is called each time access to a node needs to be determined.
-  $grants = array();
+  $grants = [];
 
   if (in_array('administrator', $account->getRoles())) {
     // Gid to view, update, delete.
@@ -129,4 +166,24 @@ function private_entity_node_grants(AccountInterface $account, $op) {
   }
 
   return $grants;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_create().
+ */
+function private_entity_field_config_create(FieldConfig $field) {
+  if ($field->getType() === 'private_entity' && !$field->isSyncing() && !$field->isDeleted()) {
+    // Set private_entity values for existing entities.
+    $oldCount = _private_entity_init_old_entries(
+      $field->getTargetEntityTypeId(),
+      $field->getTargetBundle(),
+      $field->getFieldStorageDefinition()->getName()
+    );
+
+    if ($oldCount > 0) {
+      drupal_set_message(t('%count existing entities have been set as public.', [
+        '%count' => $oldCount,
+      ]));
+    }
+  }
 }
