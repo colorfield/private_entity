@@ -24,13 +24,13 @@ class PrivateEntityFieldTest extends PrivateEntityTestBase {
    */
   protected function setUp() {
     parent::setUp();
-    $this->webUser = $this->drupalCreateUser([
+    $this->adminUser = $this->drupalCreateUser([
       // Entity test permissions.
       'view test entity',
       'administer entity_test content',
       'administer entity_test form display',
     ]);
-    $this->drupalLogin($this->webUser);
+    $this->drupalLogin($this->adminUser);
 
     $this->attachField(self::ENTITY_TYPE_ID, self::ENTITY_BUNDLE);
   }
@@ -46,7 +46,7 @@ class PrivateEntityFieldTest extends PrivateEntityTestBase {
     $fields = $this->xpath('//div[contains(@class, "field--widget-private-entity-default-widget") and @id="edit-field-private-wrapper"]');
     $this->assertEquals(1, count($fields));
     // Make sure that the widget is visible on the entity creation form.
-    $this->assertSession()->fieldExists('field_private[0][value]');
+    $this->assertSession()->fieldExists($this->fieldName . '[0][value]');
 
     // Test basic definition of private_entity field on entity save.
     $edit = [];
@@ -57,8 +57,10 @@ class PrivateEntityFieldTest extends PrivateEntityTestBase {
     $entityId = $match[1];
     $this->assertSession()
       ->pageTextContains(sprintf('%s %d has been created.', self::ENTITY_TYPE_ID, $entityId));
-    // Make sure the private_entity value is in the output.
-    // @todo
+    // Make sure the private_entity field is in the output.
+    $this->drupalGet('entity_test/' . $entityId);
+    $fields = $this->xpath('//div[contains(@class, "field--type-private-entity")]');
+    $this->assertEquals(1, count($fields));
   }
 
 }
