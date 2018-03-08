@@ -6,4 +6,5 @@ package: Access control
 
 dependencies:
   - node
+  # @todo remove entity tools dependency
   - entity_tools

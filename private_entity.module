@@ -11,6 +11,7 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\private_entity\Plugin\Field\FieldType\PrivateEntityItem;
 
 define('PRIVATE_ENTITY_REALM', 'private_entity_access');
 
@@ -43,6 +44,7 @@ function _private_entity_get_accounts($op = 'view') {
   $result = [];
   // Possible coverage of other operations
   // currently limited to 'view'.
+  // @todo remove entity tools dependency
   $entityTools = \Drupal::service('entity_tools');
   if ($entityTools instanceof EntityTools) {
     $result = $entityTools->getUsersByPermission('private entity view access');
@@ -75,8 +77,7 @@ function _private_entity_init_old_entries($entity_type_id, $entity_bundle, $fiel
   foreach ($entityIds as $entityId) {
     $entity = $storage->loadUnchanged($entityId);
     // @todo review multilingual
-    // @todo set const for public
-    $entity->{$field_name}->value = 0;
+    $entity->{$field_name}->value = PrivateEntityItem::STATUS_PUBLIC;
     if ($entity->save() === SAVED_UPDATED) {
       ++$updated;
     }

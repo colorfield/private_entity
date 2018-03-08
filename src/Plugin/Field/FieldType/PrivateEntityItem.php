@@ -22,6 +22,9 @@ use Drupal\Core\TypedData\DataDefinition;
  */
 class PrivateEntityItem extends FieldItemBase {
 
+  const STATUS_PUBLIC = 0;
+  const STATUS_PRIVATE = 1;
+
   /**
    * {@inheritdoc}
    */
@@ -41,7 +44,8 @@ class PrivateEntityItem extends FieldItemBase {
     $schema = [
       'columns' => [
         'value' => [
-    // @todo check perf with bool
+          // Integer has been preferred to boolean to allow further extension
+          // without altering the schema.
           'type' => 'int',
           'unsigned' => TRUE,
           'not null' => TRUE,
@@ -60,7 +64,7 @@ class PrivateEntityItem extends FieldItemBase {
   public function isEmpty() {
     $value = $this->get('value')->getValue();
     // @todo check is empty
-    return $value === NULL || $value === 0;
+    return $value === NULL || $value === self::STATUS_PUBLIC;
   }
 
 }
