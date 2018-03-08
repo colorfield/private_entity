@@ -5,13 +5,11 @@
  * Contains private_entity.module.
  */
 
-use Drupal\entity_tools\EntityTools;
 use Drupal\entity_tools\FieldTools;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\private_entity\Plugin\Field\FieldType\PrivateEntityItem;
 
 define('PRIVATE_ENTITY_REALM', 'private_entity_access');
 
@@ -29,61 +27,6 @@ function private_entity_help($route_name, RouteMatchInterface $route_match) {
 
     default:
   }
-}
-
-/**
- * Returns an array of accounts that have access to the private entities.
- *
- * @param string $op
- *   Operation: view, update, delete.
- *
- * @return array
- *   Array of AccountInterface instances.
- */
-function _private_entity_get_accounts($op = 'view') {
-  $result = [];
-  // Possible coverage of other operations
-  // currently limited to 'view'.
-  // @todo remove entity tools dependency
-  $entityTools = \Drupal::service('entity_tools');
-  if ($entityTools instanceof EntityTools) {
-    $result = $entityTools->getUsersByPermission('private entity view access');
-  }
-  return $result;
-}
-
-/**
- * Initializes the value as public of existing entities.
- *
- * @param string $entity_type_id
- *   Entity type id.
- * @param string $entity_bundle
- *   Entity bundle name.
- * @param string $field_name
- *   Field name.
- *
- * @return int
- *   Amount of entries that were updated.
- */
-function _private_entity_init_old_entries($entity_type_id, $entity_bundle, $field_name) {
-  $entityTypeManager = \Drupal::service('entity_type.manager');
-  $storage = $entityTypeManager->getStorage($entity_type_id);
-  $bundleKey = $storage->getEntityType()->getKey('bundle');
-  $entityQuery = \Drupal::entityQuery($entity_type_id);
-  $entityQuery->condition($bundleKey, $entity_bundle);
-  $entityIds = $entityQuery->execute();
-
-  $updated = 0;
-  foreach ($entityIds as $entityId) {
-    $entity = $storage->loadUnchanged($entityId);
-    // @todo review multilingual
-    $entity->{$field_name}->value = PrivateEntityItem::STATUS_PUBLIC;
-    if ($entity->save() === SAVED_UPDATED) {
-      ++$updated;
-    }
-  }
-
-  return $updated;
 }
 
 /**
@@ -109,9 +52,10 @@ function private_entity_node_access_records(NodeInterface $node) {
   }
 
   if ($isPrivate) {
+    $privateEntityService = \Drupal::service('private_entity');
     // If a user can view, it becomes elligible to update or delete.
     // Otherwise just ignore the grant for other accounts.
-    $accounts = _private_entity_get_accounts();
+    $accounts = $privateEntityService->getAccounts('view');
     foreach ($accounts as $account) {
       if ($account instanceof AccountInterface) {
         // Evaluation to update or delete can be done here.
@@ -174,8 +118,9 @@ function private_entity_node_grants(AccountInterface $account, $op) {
  */
 function private_entity_field_config_create(FieldConfig $field) {
   if ($field->getType() === 'private_entity' && !$field->isSyncing() && !$field->isDeleted()) {
+    $privateEntityService = \Drupal::service('private_entity');
     // Set private_entity values for existing entities.
-    $oldCount = _private_entity_init_old_entries(
+    $oldCount = $privateEntityService->initExistingEntities(
       $field->getTargetEntityTypeId(),
       $field->getTargetBundle(),
       $field->getFieldStorageDefinition()->getName()

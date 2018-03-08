@@ -1,0 +1,4 @@
+services:
+  private_entity:
+    class: Drupal\private_entity\PrivateEntity
+    arguments: ['@entity_type.manager', '@entity_tools']
