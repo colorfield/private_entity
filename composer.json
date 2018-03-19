@@ -10,5 +10,11 @@
     "issues": "https://www.drupal.org/project/issues/private_entity",
     "source": "http://cgit.drupalcode.org/private_entity"
   },
-  "require": { }
+  "require": {
+    "drupal/entity_tools": "1.x-dev"
+  },
+  "conflict": {
+    "drupal/group": "*",
+    "drupal/content_access": "*"
+  }
 }
