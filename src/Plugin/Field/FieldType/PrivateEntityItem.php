@@ -22,8 +22,8 @@ use Drupal\Core\TypedData\DataDefinition;
  */
 class PrivateEntityItem extends FieldItemBase {
 
-  const STATUS_PUBLIC = 0;
-  const STATUS_PRIVATE = 1;
+  const ACCESS_PUBLIC = 0;
+  const ACCESS_PRIVATE = 1;
 
   /**
    * {@inheritdoc}
@@ -64,7 +64,7 @@ class PrivateEntityItem extends FieldItemBase {
   public function isEmpty() {
     $value = $this->get('value')->getValue();
     // @todo check is empty
-    return $value === NULL || $value === self::STATUS_PUBLIC;
+    return $value === NULL || $value === self::ACCESS_PUBLIC;
   }
 
 }

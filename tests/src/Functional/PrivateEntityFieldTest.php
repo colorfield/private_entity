@@ -36,7 +36,9 @@ class PrivateEntityFieldTest extends PrivateEntityTestBase {
   }
 
   /**
-   * Tests the existence of the private entity field on entity test.
+   * Tests the existence of the private entity field.
+   *
+   * @todo needs work
    */
   public function testPrivateEntityField() {
     // Test the entity creation form.

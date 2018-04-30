@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\private_entity\Functional;
 
-use Drupal\node\Entity\NodeType;
+use Drupal\entity_test\Entity\EntityTest;
 
 /**
  * Tests access on Entity Test.
@@ -54,11 +54,13 @@ class PrivateEntityAccessTest extends PrivateEntityTestBase {
       'view test entity',
     ]);
 
-    $node_type = NodeType::create([
-      'type' => 'article',
-      'name' => 'Article',
-    ]);
-    $node_type->save();
+    $nodeType = $this->container->get('entity_type.manager')->getStorage('node_type')
+      ->create([
+        'type' => 'article',
+        'name' => 'Article',
+      ]);
+    $nodeType->save();
+    $this->container->get('router.builder')->rebuild();
 
     $this->attachField('node', 'article');
     $this->attachField('entity_test', 'entity_test');
@@ -66,24 +68,25 @@ class PrivateEntityAccessTest extends PrivateEntityTestBase {
 
   /**
    * Tests view access permissions to node.
+   *
+   * @todo needs work
    */
   public function testNodeViewAccess() {
     $publicNode = $this->createNode([
       'title' => 'This is public',
-      "{$this->fieldName}[0][value]" => 0,
+      "{$this->fieldName}[0]['value']" => 0,
       'status' => 1,
       'type' => 'article',
     ]);
-    // $publicNode->{$this->fieldName}->value = 0;
-    // $publicNode->save();
+    $publicNode->save();
     $privateNode = $this->createNode([
       'title' => 'This is private',
-      "{$this->fieldName}[0][value]" => 1,
+      "{$this->fieldName}[0]['value']" => 1,
       'status' => 1,
       'type' => 'article',
     ]);
-    // $privateNode->{$this->fieldName}->value = 1;
-    // $privateNode->save();
+    $privateNode->save();
+
     // Make sure the private_entity field is in the output.
     $this->drupalGet('node/' . $publicNode->id());
     $fields = $this->xpath('//div[contains(@class, "field--type-private-entity")]');
@@ -113,56 +116,41 @@ class PrivateEntityAccessTest extends PrivateEntityTestBase {
 
   /**
    * Tests view access permissions to entity_test.
+   *
+   * @todo needs work
    */
   public function testViewAccess() {
-    // As an administrator, create a public entity
-    // it should be viewable and the field should be in the output.
-    $edit = [
-    // Public.
-      "{$this->fieldName}[0][value]" => 0,
+    $publicData = [
+      'type' => 'entity_test',
+      'name' => $this->randomMachineName(),
+      $this->fieldName => 0,
     ];
-    $this->drupalPostForm('entity_test/add', $edit, t('Save'));
-    preg_match('|entity_test/manage/(\d+)|', $this->getSession()
-      ->getCurrentUrl(), $match);
-    $publicEntityId = $match[1];
-    $this->assertSession()
-      ->pageTextContains(sprintf('%s %d has been created.', 'entity_test', $publicEntityId));
-    $this->assertSession()->statusCodeEquals(200);
-    // Make sure the private_entity field is in the output.
-    $fields = $this->xpath('//div[contains(@class, "field--type-private-entity")]');
-    $this->assertEquals(1, count($fields));
-
-    // As an administrator, create a public entity
-    // it should be viewable and the field should be in the output.
-    $edit = [
-    // Private.
-      "{$this->fieldName}[0][value]" => 1,
+    $privateData = [
+      'type' => 'entity_test',
+      'name' => $this->randomMachineName(),
+      $this->fieldName => 1,
     ];
-    $this->drupalPostForm('entity_test/add', $edit, t('Save'));
-    preg_match('|entity_test/manage/(\d+)|', $this->getSession()
-      ->getCurrentUrl(), $match);
-    $privateEntityId = $match[1];
-    $this->assertSession()
-      ->pageTextContains(sprintf('%s %d has been created.', 'entity_test', $privateEntityId));
-    $this->assertSession()->statusCodeEquals(200);
-    // Make sure the private_entity field is in the output.
-    $fields = $this->xpath('//div[contains(@class, "field--type-private-entity")]');
-    $this->assertEquals(1, count($fields));
+    $publicEntity = EntityTest::create($publicData);
+    $privateEntity = EntityTest::create($privateData);
+    $publicEntity->set($this->fieldName, 0);
+    $privateEntity->set($this->fieldName, 1);
+    $publicEntity->save();
+    $privateEntity->save();
 
     // Tests user that has the permission to view private entities.
     $this->drupalLogout();
     $this->drupalLogin($this->privateViewUser);
-    $this->drupalGet('entity_test/' . $publicEntityId);
+    $this->drupalGet('entity_test/' . $publicEntity->id());
     $this->assertSession()->statusCodeEquals(200);
-    $this->drupalGet('entity_test/' . $privateEntityId);
+    $this->drupalGet('entity_test/' . $privateEntity->id());
     $this->assertSession()->statusCodeEquals(200);
 
     // Tests user that has the permission to view public entities.
     $this->drupalLogout();
     $this->drupalLogin($this->publicViewUser);
-    $this->drupalGet('entity_test/' . $publicEntityId);
+    $this->drupalGet('entity_test/' . $publicEntity->id());
     $this->assertSession()->statusCodeEquals(200);
-    $this->drupalGet('entity_test/' . $privateEntityId);
+    $this->drupalGet('entity_test/' . $privateEntity->id());
     // @todo returns 200
     $this->assertSession()->statusCodeEquals(403);
   }

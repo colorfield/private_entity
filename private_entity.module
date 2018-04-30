@@ -33,8 +33,10 @@ function private_entity_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_node_access_records().
  */
 function private_entity_node_access_records(NodeInterface $node) {
-
   // This hook is called after saving a node.
+  // @todo Code design: is private should be set to true by default
+  // now that private_entity_field_config_insert takes care of setting
+  // initial values on existing content.
   $isPrivate = FALSE;
   $privateFieldName = FieldTools::getFieldNameFromType($node, 'private_entity');
   if (!is_null($privateFieldName) && $node->hasField($privateFieldName)) {
@@ -44,6 +46,7 @@ function private_entity_node_access_records(NodeInterface $node) {
     if (isset($privateFieldValue[0]['value'])
       && (int) $privateFieldValue[0]['value'] === 1) {
       $isPrivate = TRUE;
+      // @todo use messenger and require Drupal 8.5
       drupal_set_message(t('This content was set as private.'), 'warning');
     }
     else {
@@ -52,10 +55,11 @@ function private_entity_node_access_records(NodeInterface $node) {
   }
 
   if ($isPrivate) {
+    /** @var \Drupal\private_entity\PrivateEntityInterface $privateEntityService */
     $privateEntityService = \Drupal::service('private_entity');
-    // If a user can view, it becomes elligible to update or delete.
+    // If a user can view, it becomes eligible to update or delete.
     // Otherwise just ignore the grant for other accounts.
-    $accounts = $privateEntityService->getAccounts('view');
+    $accounts = $privateEntityService->getGrantedAccounts(['view']);
     foreach ($accounts as $account) {
       if ($account instanceof AccountInterface) {
         // Evaluation to update or delete can be done here.
@@ -94,30 +98,27 @@ function private_entity_node_access_records(NodeInterface $node) {
  * Implements hook_node_grants().
  */
 function private_entity_node_grants(AccountInterface $account, $op) {
-
   // This hook is called each time access to a node needs to be determined.
   $grants = [];
-
   if (in_array('administrator', $account->getRoles())) {
     // Gid to view, update, delete.
     $grants[PRIVATE_ENTITY_REALM][] = 0;
     return $grants;
   }
-
   // @todo roles exclusion (bypass access rule) from a new permission
   if ($account->id() != 0) {
     // Otherwise return uid, might match entry in table.
     $grants[PRIVATE_ENTITY_REALM][] = $account->id();
   }
-
   return $grants;
 }
 
 /**
- * Implements hook_ENTITY_TYPE_create().
+ * Implements hook_ENTITY_TYPE_insert().
  */
-function private_entity_field_config_create(FieldConfig $field) {
+function private_entity_field_config_insert(FieldConfig $field) {
   if ($field->getType() === 'private_entity' && !$field->isSyncing() && !$field->isDeleted()) {
+    /** @var \Drupal\private_entity\PrivateEntityInterface $privateEntityService */
     $privateEntityService = \Drupal::service('private_entity');
     // Set private_entity values for existing entities.
     $oldCount = $privateEntityService->initExistingEntities(
@@ -125,7 +126,6 @@ function private_entity_field_config_create(FieldConfig $field) {
       $field->getTargetBundle(),
       $field->getFieldStorageDefinition()->getName()
     );
-
     if ($oldCount > 0) {
       drupal_set_message(t('%count existing entities have been set as public.', [
         '%count' => $oldCount,

@@ -28,7 +28,6 @@ class PrivateEntityDefaultWidget extends WidgetBase {
       '#options' => [1 => t('Private'), 0 => t('Public')],
       '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : 0,
     ];
-
     return $element;
   }
 

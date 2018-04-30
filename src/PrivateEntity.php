@@ -36,32 +36,18 @@ class PrivateEntity implements PrivateEntityInterface {
   }
 
   /**
-   * Returns an array of accounts that have access to the private entities.
-   *
-   * @param string $operation
-   *   Operation: view, update, delete.
-   *
-   * @return array
-   *   Array of AccountInterface instances.
+   * {@inheritdoc}
    */
-  public function getAccounts($operation = 'view') {
+  public function getGrantedAccounts(array $operations = ['view']) {
     // Possible coverage of other operations
     // currently limited to 'view'.
+    // @todo remove entity tools dependency, used for prototyping only.
+    // @todo implement other operations.
     return $this->entityTools->getUsersByPermission('private entity view access');
   }
 
   /**
-   * Initializes the value of existing entities to public.
-   *
-   * @param string $entity_type_id
-   *   Entity type id.
-   * @param string $entity_bundle
-   *   Entity bundle name.
-   * @param string $field_name
-   *   Field name.
-   *
-   * @return int
-   *   Amount of entries that were updated.
+   * {@inheritdoc}
    */
   public function initExistingEntities($entity_type_id, $entity_bundle, $field_name) {
     $storage = $this->entityTypeManager->getStorage($entity_type_id);
@@ -77,7 +63,7 @@ class PrivateEntity implements PrivateEntityInterface {
         if ($entity instanceof ContentEntityInterface) {
           // @todo review multilingual
           // @todo wait for field being created
-          $entity->set($field_name, PrivateEntityItem::STATUS_PUBLIC);
+          $entity->set($field_name, PrivateEntityItem::ACCESS_PUBLIC);
           if ($entity->save() === SAVED_UPDATED) {
             ++$updated;
           }
