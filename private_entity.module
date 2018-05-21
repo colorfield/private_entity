@@ -69,26 +69,34 @@ function private_entity_node_access_records(NodeInterface $node) {
         $grantUpdate = 0;
         // @todo evaluate has permission to delete
         $grantDelete = 0;
-        $grants[] = [
-          'realm' => PRIVATE_ENTITY_REALM,
-          'gid' => $account->id(),
-          'grant_view' => 1,
-          'grant_update' => $grantUpdate,
-          'grant_delete' => $grantDelete,
-          'langcode' => 'en',
-        ];
+        foreach ($node->getTranslationLanguages(TRUE) as $translationLanguage) {
+          if ($node->hasTranslation($translationLanguage->getId())) {
+            $grants[] = [
+              'realm' => PRIVATE_ENTITY_REALM,
+              'gid' => $account->id(),
+              'grant_view' => 1,
+              'grant_update' => $grantUpdate,
+              'grant_delete' => $grantDelete,
+              'langcode' => $translationLanguage->getId(),
+            ];
+          }
+        }
       }
     }
 
     // Exception for the admin GID.
-    $grants[] = [
-      'realm' => PRIVATE_ENTITY_REALM,
-      'gid' => 0,
-      'grant_view' => 1,
-      'grant_update' => 1,
-      'grant_delete' => 1,
-      'langcode' => 'en',
-    ];
+    foreach ($node->getTranslationLanguages(TRUE) as $translationLanguage) {
+      if ($node->hasTranslation($translationLanguage->getId())) {
+        $grants[] = [
+          'realm' => PRIVATE_ENTITY_REALM,
+          'gid' => 0,
+          'grant_view' => 1,
+          'grant_update' => 1,
+          'grant_delete' => 1,
+          'langcode' => $translationLanguage->getId(),
+        ];
+      }
+    }
 
     return $grants;
   }
