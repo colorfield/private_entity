@@ -7,16 +7,11 @@ namespace Drupal\private_entity;
  */
 interface PrivateEntityInterface {
 
-  /**
-   * Returns an array of accounts that have access to the private entities.
-   *
-   * @param array $operations
-   *   List of operations covered by the grant: view, update, delete.
-   *
-   * @return array
-   *   Array of AccountInterface instances.
-   */
-  public function getGrantedAccounts(array $operations);
+  const PRIVATE_ENTITY_REALM = 'private_entity_access';
+
+  const ACCESS_PUBLIC = 0;
+
+  const ACCESS_PRIVATE = 1;
 
   /**
    * Initializes the value of existing entities to public.

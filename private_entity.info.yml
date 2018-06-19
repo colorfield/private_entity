@@ -6,5 +6,3 @@ package: Access control
 
 dependencies:
   - node
-  # @todo remove entity tools dependency, used for prototyping only.
-  - entity_tools

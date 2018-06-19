@@ -10,8 +10,7 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldConfig;
-
-define('PRIVATE_ENTITY_REALM', 'private_entity_access');
+use Drupal\private_entity\PrivateEntityInterface;
 
 /**
  * Implements hook_help().
@@ -46,49 +45,33 @@ function private_entity_node_access_records(NodeInterface $node) {
     if (isset($privateFieldValue[0]['value'])
       && (int) $privateFieldValue[0]['value'] === 1) {
       $isPrivate = TRUE;
-      // @todo use messenger and require Drupal 8.5
-      drupal_set_message(t('This content was set as private.'), 'warning');
+      \Drupal::messenger()->addWarning(t('This content was set as private.'), 'warning');
     }
     else {
-      drupal_set_message(t('This content was set as public.'));
+      \Drupal::messenger()->addStatus(t('This content was set as public.'));
     }
   }
 
   if ($isPrivate) {
-    /** @var \Drupal\private_entity\PrivateEntityInterface $privateEntityService */
-    $privateEntityService = \Drupal::service('private_entity');
-    // If a user can view, it becomes eligible to update or delete.
-    // Otherwise just ignore the grant for other accounts.
-    $accounts = $privateEntityService->getGrantedAccounts(['view']);
-    foreach ($accounts as $account) {
-      if ($account instanceof AccountInterface) {
-        // Evaluation to update or delete can be done here.
-        // Or simply during the evaluation of hook_node_grants()
-        // but with perf issue.
+    foreach ($node->getTranslationLanguages(TRUE) as $translationLanguage) {
+      if ($node->hasTranslation($translationLanguage->getId())) {
+        $grants[] = [
+          'realm' => PrivateEntityInterface::PRIVATE_ENTITY_REALM,
+          'gid' => PrivateEntityInterface::ACCESS_PRIVATE,
+          'grant_view' => 1,
         // @todo evaluate has permission to update
-        $grantUpdate = 0;
+          'grant_update' => 0,
         // @todo evaluate has permission to delete
-        $grantDelete = 0;
-        foreach ($node->getTranslationLanguages(TRUE) as $translationLanguage) {
-          if ($node->hasTranslation($translationLanguage->getId())) {
-            $grants[] = [
-              'realm' => PRIVATE_ENTITY_REALM,
-              'gid' => $account->id(),
-              'grant_view' => 1,
-              'grant_update' => $grantUpdate,
-              'grant_delete' => $grantDelete,
-              'langcode' => $translationLanguage->getId(),
-            ];
-          }
-        }
+          'grant_delete' => 0,
+          'langcode' => $translationLanguage->getId(),
+        ];
       }
     }
-
     // Exception for the admin GID.
     foreach ($node->getTranslationLanguages(TRUE) as $translationLanguage) {
       if ($node->hasTranslation($translationLanguage->getId())) {
         $grants[] = [
-          'realm' => PRIVATE_ENTITY_REALM,
+          'realm' => PrivateEntityInterface::PRIVATE_ENTITY_REALM,
           'gid' => 0,
           'grant_view' => 1,
           'grant_update' => 1,
@@ -110,13 +93,12 @@ function private_entity_node_grants(AccountInterface $account, $op) {
   $grants = [];
   if (in_array('administrator', $account->getRoles())) {
     // Gid to view, update, delete.
-    $grants[PRIVATE_ENTITY_REALM][] = 0;
+    $grants[PrivateEntityInterface::PRIVATE_ENTITY_REALM][] = 0;
     return $grants;
   }
-  // @todo roles exclusion (bypass access rule) from a new permission
-  if ($account->id() != 0) {
+  if ($account->hasPermission('private entity view access')) {
     // Otherwise return uid, might match entry in table.
-    $grants[PRIVATE_ENTITY_REALM][] = $account->id();
+    $grants[PrivateEntityInterface::PRIVATE_ENTITY_REALM][] = PrivateEntityInterface::ACCESS_PRIVATE;
   }
   return $grants;
 }
@@ -135,7 +117,7 @@ function private_entity_field_config_insert(FieldConfig $field) {
       $field->getFieldStorageDefinition()->getName()
     );
     if ($oldCount > 0) {
-      drupal_set_message(t('%count existing entities have been set as public.', [
+      \Drupal::messenger()->addStatus(t('%count existing entities have been set as public.', [
         '%count' => $oldCount,
       ]));
     }
