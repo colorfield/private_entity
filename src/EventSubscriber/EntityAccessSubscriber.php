@@ -58,6 +58,7 @@ class EntityAccessSubscriber implements EventSubscriberInterface {
    *   The event to process.
    */
   public function on403(Event $event) {
+    // @todo implement redirection to user login with destination
     // @todo review http://cgit.drupalcode.org/drupal/tree/core/lib/Drupal/Core/EventSubscriber/CustomPageExceptionHtmlSubscriber.php
     $config = $this->configFactory->get('private_entity.settings');
     // drupal_set_message($config->get('user_login_redirect'));

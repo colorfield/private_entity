@@ -124,7 +124,7 @@ function private_entity_field_config_insert(FieldConfig $field) {
       $field->getFieldStorageDefinition()->getName()
     );
     if ($oldCount > 0) {
-      \Drupal::messenger()->addStatus(t('%count existing entities have been set as public.', [
+      \Drupal::messenger()->addStatus(t('The access for %count existing entities has been set to public.', [
         '%count' => $oldCount,
       ]));
     }

@@ -35,6 +35,9 @@ class PrivateEntity implements PrivateEntityInterface {
    */
   public function initExistingEntities($entity_type_id, $entity_bundle, $field_name) {
     $updated = 0;
+    // @todo inject logger and messenger
+    $logger = \Drupal::logger('private_entity');
+    $messenger = \Drupal::messenger();
     try {
       $storage = $this->entityTypeManager->getStorage($entity_type_id);
       $bundleKey = $storage->getEntityType()->getKey('bundle');
@@ -55,18 +58,17 @@ class PrivateEntity implements PrivateEntityInterface {
         }
       }
     }
-    // @todo inject logger and messenger
     catch (PluginNotFoundException $exception) {
-      \Drupal::logger('private_entity')->error($exception->getMessage());
-      \Drupal::messenger()->addError($exception->getMessage());
+      $logger->error($exception->getMessage());
+      $messenger->addError($exception->getMessage());
     }
     catch (InvalidPluginDefinitionException $exception) {
-      \Drupal::logger('private_entity')->error($exception->getMessage());
-      \Drupal::messenger()->addError($exception->getMessage());
+      $logger->error($exception->getMessage());
+      $messenger->addError($exception->getMessage());
     }
     catch (EntityStorageException $exception) {
-      \Drupal::logger('private_entity')->error($exception->getMessage());
-      \Drupal::messenger()->addError($exception->getMessage());
+      $logger->error($exception->getMessage());
+      $messenger->addError($exception->getMessage());
     }
 
     return $updated;
