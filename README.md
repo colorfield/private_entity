@@ -13,7 +13,7 @@ There is a work in progress to cover other entity types.
 
 ## Use case
 
-Uses node access records, so it can be used with Search API indexes,
+Based on node access records, so it can be used with Search API indexes,
 Views, ... with no other configuration than the field and the permission.
  
 It is suitable when you want:
@@ -33,7 +33,7 @@ content access control.
 
 - Unit tests
 - Redirect 403 to user login then redirect after login to the entity 
-that tried to be accessed.
+that was tried to be accessed.
 - Cover other entity types.
 - Bulk edit from the /admin/content list.
 - Use a custom publishing option as an alternative to a field.
