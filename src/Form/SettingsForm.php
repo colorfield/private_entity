@@ -34,7 +34,7 @@ class SettingsForm extends ConfigFormBase {
     $form['messages'] = [
       '#type' => 'fieldset',
       '#title' => t('Confirmation message'),
-      '#description' => t('Confirmation of the entity access status after saving an entity.'),
+      '#description' => t('Confirmation of the access status after saving an entity.'),
       '#collapsible' => TRUE,
     ];
     $form['messages']['confirm_public'] = [
@@ -46,6 +46,17 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'checkbox',
       '#title' => $this->t('When the entity is <strong>private</strong>'),
       '#default_value' => $config->get('confirm_private'),
+    ];
+    $form['redirection'] = [
+      '#type' => 'fieldset',
+      '#title' => t('Redirection'),
+      '#collapsible' => TRUE,
+    ];
+    $form['redirection']['user_login_redirect'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Redirect to the user login'),
+      '#description' => $this->t('Redirect to the user login with the destination when the entity is private.'),
+      '#default_value' => $config->get('user_login_redirect'),
     ];
     return parent::buildForm($form, $form_state);
   }
@@ -59,6 +70,7 @@ class SettingsForm extends ConfigFormBase {
     $this->config('private_entity.settings')
       ->set('confirm_public', $form_state->getValue('confirm_public'))
       ->set('confirm_private', $form_state->getValue('confirm_private'))
+      ->set('user_login_redirect', $form_state->getValue('user_login_redirect'))
       ->save();
   }
 
