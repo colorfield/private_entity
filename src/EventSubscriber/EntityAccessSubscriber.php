@@ -3,7 +3,6 @@
 namespace Drupal\private_entity\EventSubscriber;
 
 use Drupal\Core\Access\AccessManagerInterface;
-use Drupal\Core\EventSubscriber\DefaultExceptionHtmlSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\Event;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -12,7 +11,7 @@ use Drupal\Core\Path\PathMatcherInterface;
 /**
  * Class EntityAccessSubscriber.
  */
-class EntityAccessSubscriber extends DefaultExceptionHtmlSubscriber implements EventSubscriberInterface {
+class EntityAccessSubscriber implements EventSubscriberInterface {
 
   /**
    * Drupal\Core\Access\AccessManagerInterface definition.
@@ -49,21 +48,21 @@ class EntityAccessSubscriber extends DefaultExceptionHtmlSubscriber implements E
    */
   public static function getSubscribedEvents() {
     $events['kernel.response'] = ['on403'];
-
     return $events;
   }
 
   /**
-   * This method is called whenever the kernel.response event is
-   * dispatched.
+   * Handles a 403 error for HTML.
    *
-   * @param GetResponseEvent $event
+   * @param \Symfony\Component\EventDispatcher\Event $event
+   *   The event to process.
    */
   public function on403(Event $event) {
     // @todo review http://cgit.drupalcode.org/drupal/tree/core/lib/Drupal/Core/EventSubscriber/CustomPageExceptionHtmlSubscriber.php
     $config = $this->configFactory->get('private_entity.settings');
-    drupal_set_message($config->get('user_login_redirect'));
-    drupal_set_message('Event kernel.response thrown by Subscriber in module private_entity.', 'status', TRUE);
+    // drupal_set_message($config->get('user_login_redirect'));
+    // drupal_set_message('Event kernel.response thrown by Subscriber
+    // in module private_entity.', 'status', TRUE);.
   }
 
 }

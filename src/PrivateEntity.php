@@ -3,9 +3,12 @@
 namespace Drupal\private_entity;
 
 use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\private_entity\Plugin\Field\FieldType\PrivateEntityItem;
 
 /**
@@ -52,6 +55,11 @@ class PrivateEntity implements PrivateEntityInterface {
         }
       }
     }
+    // @todo inject logger and messenger
+    catch (PluginNotFoundException $exception) {
+      \Drupal::logger('private_entity')->error($exception->getMessage());
+      \Drupal::messenger()->addError($exception->getMessage());
+    }
     catch (InvalidPluginDefinitionException $exception) {
       \Drupal::logger('private_entity')->error($exception->getMessage());
       \Drupal::messenger()->addError($exception->getMessage());
@@ -62,6 +70,24 @@ class PrivateEntity implements PrivateEntityInterface {
     }
 
     return $updated;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFieldNameFromType(FieldableEntityInterface $entity, $field_type) {
+    $result = NULL;
+    if (!empty($field_type)) {
+      $fieldDefinitions = $entity->getFieldDefinitions();
+      foreach ($fieldDefinitions as $fieldDefinition) {
+        if ($fieldDefinition instanceof FieldConfig) {
+          if ($fieldDefinition->getType() === $field_type) {
+            $result = $fieldDefinition->getName();
+          }
+        }
+      }
+    }
+    return $result;
   }
 
 }

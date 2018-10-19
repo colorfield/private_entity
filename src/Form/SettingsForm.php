@@ -54,7 +54,7 @@ class SettingsForm extends ConfigFormBase {
     ];
     $form['redirection']['user_login_redirect'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Redirect to the user login'),
+      '#title' => $this->t('Redirect to the user login [WIP]'),
       '#description' => $this->t('Redirect to the user login with the destination when the entity is private.'),
       '#default_value' => $config->get('user_login_redirect'),
     ];

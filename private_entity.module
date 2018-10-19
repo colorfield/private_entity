@@ -5,7 +5,6 @@
  * Contains private_entity.module.
  */
 
-use Drupal\entity_tools\FieldTools;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -37,7 +36,9 @@ function private_entity_node_access_records(NodeInterface $node) {
   // now that private_entity_field_config_insert takes care of setting
   // initial values on existing content.
   $isPrivate = FALSE;
-  $privateFieldName = FieldTools::getFieldNameFromType($node, 'private_entity');
+  /** @var \Drupal\private_entity\PrivateEntityInterface $privateEntityService */
+  $privateEntityService = \Drupal::service('private_entity');
+  $privateFieldName = $privateEntityService->getFieldNameFromType($node, 'private_entity');
   if (!is_null($privateFieldName) && $node->hasField($privateFieldName)) {
     $messenger = \Drupal::messenger();
     $config = \Drupal::config('private_entity.settings');
