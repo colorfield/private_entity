@@ -21,7 +21,7 @@ function private_entity_help($route_name, RouteMatchInterface $route_match) {
     case 'help.page.private_entity':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('Simple per entity access control.') . '</p>';
+      $output .= '<p>' . t('Simple entity access control set on the entity create or edit form, limited to the view operation.') . '</p>';
       return $output;
 
     default:
@@ -39,16 +39,17 @@ function private_entity_node_access_records(NodeInterface $node) {
   $isPrivate = FALSE;
   $privateFieldName = FieldTools::getFieldNameFromType($node, 'private_entity');
   if (!is_null($privateFieldName) && $node->hasField($privateFieldName)) {
+    $messenger = \Drupal::messenger();
     $privateFieldValue = $node->get($privateFieldName)->getValue();
     // @todo define a field type 'is private' that can be appended on entities.
     // @todo config to set message or not.
     if (isset($privateFieldValue[0]['value'])
       && (int) $privateFieldValue[0]['value'] === 1) {
       $isPrivate = TRUE;
-      \Drupal::messenger()->addWarning(t('This content was set as private.'), 'warning');
+      $messenger->addWarning(t('This content was set as private.'), 'warning');
     }
     else {
-      \Drupal::messenger()->addStatus(t('This content was set as public.'));
+      $messenger->addStatus(t('This content was set as public.'));
     }
   }
 

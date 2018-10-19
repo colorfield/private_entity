@@ -1,8 +1,8 @@
 name: Private Entity
 type: module
-description: Simple per entity access control.
+description: Simple entity access control set on the entity create or edit form, limited to the view operation.
 core: 8.x
 package: Access control
 
 dependencies:
-  - node
+  - drupal:field
