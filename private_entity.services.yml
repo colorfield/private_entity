@@ -2,3 +2,7 @@ services:
   private_entity:
     class: Drupal\private_entity\PrivateEntity
     arguments: ['@entity_type.manager']
+  access_check.private_entity_term_access:
+    class: Drupal\private_entity\Access\TermPageAccessCheck
+    tags:
+      - { name: access_check, applies_to: _entity_access }
